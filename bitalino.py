@@ -416,6 +416,8 @@ if __name__ == '__main__':
     samplingRate = 1000
     nSamples = 10
     digitalOutput = [0,0,1,1]
+    lowcut = 5
+    highcut = 15
 
     style.use('ggplot')
 
