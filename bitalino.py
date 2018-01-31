@@ -12,6 +12,7 @@ import numpy
 import re
 import serial
 import struct
+import proses
 import time
 import matplotlib.pyplot as plt
 from matplotlib import style
@@ -358,11 +359,8 @@ def dataPlotting():
     # Take time
     start = time.time()
     end = time.time()
+    now = end
     interval = end-start
-
-    # Create and open txt file
-    filename = 'ecg.txt'
-    file = open(filename, 'w')
     
     # Give label to figure
     plt.xlabel("Time(sec)")
@@ -371,22 +369,29 @@ def dataPlotting():
     # Prepare array for data
     stime = numpy.array([])
     secg = numpy.array([])
+    filtered_data = numpy.array([])
 
     while (interval) < running_time:
         # Read samples
         data = device.read(nSamples)
-        for row in data:
-            interval = end-start
-            file.write("%s\n" % row[6])
+        dataT = data.T[0:]
+        
+        interval = end - start
+        tTemp = numpy.linspace(now,end,nSamples)
 
-            stime = numpy.append(stime,interval)
-            secg = numpy.append(secg,row[6])
+        filtered_data = ps.butter_bandpass_filter(dataT[6],lowcut,highcut,samplingRate,order)
+        stime = numpy.append(stime,tTemp)
+        secg = numpy.append(secg,filtered_data)
+        
+        now = end
+        end = time.time()
+        
+        plt.plot(stime, secg, color='red')
+        plt.draw()
+        plt.pause(0.0001)
+            
 
-            plt.plot(stime, secg, color='red')
-            plt.draw()
-            plt.pause(0.0001)
-            end = time.time()
-
+    numpy.savetxt("ecg.csv", numpy.transpose([stime,secg]), fmt='%.3e',delimiter=",",header="ECG")
     plt.savefig('ecg.png')
 
 def startButton():
@@ -413,16 +418,18 @@ if __name__ == '__main__':
 
     batteryThreshold = 30
     acqChannels = [0,3]
-    samplingRate = 1000
+    samplingRate = 100
     nSamples = 10
     digitalOutput = [0,0,1,1]
-    lowcut = 5
-    highcut = 15
-
-    style.use('ggplot')
+    lowcut = 0.5
+    highcut = 40.0
+    order = 2
 
     # Connect to BITalino
     device = BITalino(macAddress)
+
+    # Create
+    ps = proses.ProcessECG()
 
     # Set battery threshold
     device.battery(batteryThreshold)
