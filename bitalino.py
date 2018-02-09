@@ -14,9 +14,11 @@ import serial
 import struct
 import proses
 import time
+import thread
 import matplotlib.pyplot as plt
 from matplotlib import style
 from Tkinter import *
+from collections import deque
 
 root = Tk()
 
@@ -353,46 +355,101 @@ class BITalino(object):
         return data
             
 def dataPlotting():
-    # Create figure
-    fig = plt.figure()
-
     # Take time
     start = time.time()
     end = time.time()
-    now = end
-    interval = end-start
-    
-    # Give label to figure
-    plt.xlabel("Time(sec)")
+    interval = end - start
+
+    # Create Figure
+    plt.figure()
+    plt.title('ECG')
+    plt.xlabel("n")
     plt.ylabel("Amplitude")
 
-    # Prepare array for data
-    stime = numpy.array([])
+    # plt.figure(2)
+    # plt.title('Bandpass Filter')
+    # plt.xlabel("Time(sec)")
+    # plt.ylabel("Amplitude")
+
+    nData = numpy.array([])
     secg = numpy.array([])
-    filtered_data = numpy.array([])
+    secg2 = numpy.array([])
+
+    nDataPlot = numpy.array([])
+    secgPlot = numpy.array([])
+    secg2Plot = numpy.array([])
+
+
+    summ = 0
+    counter = 0
+
+    # Optimizing Python
+    cla=plt.cla
+    draw=plt.draw
+    timed = time.time
+    appe = numpy.append
+    plotted = plt.plot
+    readed = device.read
+    bandpass = ps.butter_bandpass_filter
 
     while (interval) < running_time:
         # Read samples
-        data = device.read(nSamples)
-        dataT = data.T[0:]
-        
-        interval = end - start
-        tTemp = numpy.linspace(now,end,nSamples)
+        data = readed(nSamples)
+        dataT = data.T
 
-        filtered_data = ps.butter_bandpass_filter(dataT[6],lowcut,highcut,samplingRate,order)
-        stime = numpy.append(stime,tTemp)
-        secg = numpy.append(secg,filtered_data)
+        interval = end - start
+
+        filtered_data = bandpass(dataT[6],lowcut,highcut,samplingRate,order)
+        #ithread.start_new_thread(populateForSave,(dataT, filtered_data, counter, ))
+
+        secgPlot = appe(secgPlot,dataT[6])
+        nDataPlot = appe(nDataPlot,[counter + 1,counter + 2,counter + 3,counter + 4,counter + 5,counter + 6,counter + 7,counter + 8,counter + 9,counter + 10])
+        secg2Plot = appe(secg2Plot,filtered_data)
         
-        now = end
-        end = time.time()
+        secg = appe(secg,dataT[6])
+        nData = appe(nData,[counter + 1,counter + 2,counter + 3,counter + 4,counter + 5,counter + 6,counter + 7,counter + 8,counter + 9,counter + 10])
+        secg2 = appe(secg2,filtered_data)
+
+        counter = counter + 10
+        end = timed()
         
-        plt.plot(stime, secg, color='red')
-        plt.draw()
+        cla()
+        #if counter % 30
+        # try:
+        #    thread.start_new_thread( blyat, (nData, secg, secg2, ) )
+        # except:
+        #    print "Error: unable to start thread"
+        # # Plotting
+        # plt.figure(1)
+        if counter > 100 :
+            nDataPlot = nDataPlot[10:]
+            secgPlot = secgPlot[10:]
+            secg2Plot = secg2Plot[10:]
+
+        plotted(nDataPlot, secgPlot, color='red', alpha=0.5)
+
+        # plt.figure(2)
+        plotted(nDataPlot, secg2Plot, color='blue', alpha=0.5)
+        
+        print counter
+
+        draw()
         plt.pause(0.0001)
             
-
-    numpy.savetxt("ecg.csv", numpy.transpose([stime,secg]), fmt='%.3e',delimiter=",",header="ECG")
+    #peak = wfdb.processing.gqrs_detect(x=secg2, fs=samplingRate, adcgain = secg2.adcgain[0], adczero = secg2.adczero[0], threshold=1.0)
+    #print peak
+    numpy.savetxt("ecgRaw.csv", numpy.transpose([nData,secg]), fmt='%.3e',delimiter=",",header="ECG")
+    numpy.savetxt("ecgBandpass.csv", numpy.transpose([nData,secg2]), fmt='%.3e',delimiter=",",header="ECG")
     plt.savefig('ecg.png')
+
+# def populateForSave(dataT, filtered_data, counter):
+#     global secg
+#     global nData
+#     global secg2
+#     appe = numpy.append
+#     secg = appe(secg,dataT[6])
+#     nData = appe(nData,[counter + 1,counter + 2,counter + 3,counter + 4,counter + 5,counter + 6,counter + 7,counter + 8,counter + 9,counter + 10])
+#     secg2 = appe(secg2,filtered_data)
 
 def startButton():
     # Start Acquisition
@@ -421,14 +478,14 @@ if __name__ == '__main__':
     samplingRate = 100
     nSamples = 10
     digitalOutput = [0,0,1,1]
-    lowcut = 0.5
-    highcut = 40.0
+    lowcut = 5.0
+    highcut = 45.0
     order = 2
 
     # Connect to BITalino
     device = BITalino(macAddress)
 
-    # Create
+    # Create object
     ps = proses.ProcessECG()
 
     # Set battery threshold
