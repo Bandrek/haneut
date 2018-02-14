@@ -15,6 +15,7 @@ import struct
 import proses
 import time
 import thread
+import biosppy
 import matplotlib.pyplot as plt
 from matplotlib import style
 from Tkinter import *
@@ -354,6 +355,27 @@ class BITalino(object):
             data += reader(1)
         return data
             
+def convert(array):
+    divisor = numpy.divide
+    subtractor = numpy.subtract
+    multiplier = numpy.multiply
+    powerer = numpy.power
+
+    n = 10
+    vcc = 3.3
+    half = 0.5
+    g = 1100
+    denominator = powerer(2,n)
+
+    result = numpy.array([])
+    result = divisor(array,denominator)
+    result = subtractor(result,half)
+    result = multiplier(result,vcc)
+    result = divisor(result,g)
+    result = multiplier(result,1000)
+
+    return result
+
 def dataPlotting():
     # Take time
     start = time.time()
@@ -391,55 +413,60 @@ def dataPlotting():
     plotted = plt.plot
     readed = device.read
     bandpass = ps.butter_bandpass_filter
+    convArr = numpy.asarray
+    segmen = biosppy.ecg.hamilton_segmenter
+    cpeak = biosppy.ecg.correct_rpeaks
+    norm = biosppy.signals.tools.normalize
+    savetext = numpy.savetxt
+    analitycSignal = biosppy.signals.tools.analytic_signal
+    trans = numpy.transpose
 
     while (interval) < running_time:
         # Read samples
         data = readed(nSamples)
         dataT = data.T
+        dataTbaru = convert(dataT[6])
 
         interval = end - start
-
-        filtered_data = bandpass(dataT[6],lowcut,highcut,samplingRate,order)
-        #ithread.start_new_thread(populateForSave,(dataT, filtered_data, counter, ))
-
-        secgPlot = appe(secgPlot,dataT[6])
-        nDataPlot = appe(nDataPlot,[counter + 1,counter + 2,counter + 3,counter + 4,counter + 5,counter + 6,counter + 7,counter + 8,counter + 9,counter + 10])
-        secg2Plot = appe(secg2Plot,filtered_data)
         
-        secg = appe(secg,dataT[6])
+        #secg = appe(secg,dataT[6])
+        secg2 = appe(secg2,dataTbaru)
         nData = appe(nData,[counter + 1,counter + 2,counter + 3,counter + 4,counter + 5,counter + 6,counter + 7,counter + 8,counter + 9,counter + 10])
-        secg2 = appe(secg2,filtered_data)
-
+        bandpassed = bandpass(secg2,lowcut,highcut,samplingRate,order)
+        normalized = convArr(norm(signal=bandpassed,ddof=1))[0]
+        hilbert = convArr(analitycSignal(signal=normalized, N=samplingRate*running_time))
+        amplitud = hilbert[0]
+        phas = hilbert[1]
         counter = counter + 10
         end = timed()
         
         cla()
         #if counter % 30
         # try:
-        #    thread.start_new_thread( blyat, (nData, secg, secg2, ) )
-        # except:
+        #    thread.start_new_thread( blyat, (nData, secg, bandpassed, ) )
+        # alizedexcept:
         #    print "Error: unable to start thread"
-        # # Plotting
+        # # 500
         # plt.figure(1)
-        if counter > 100 :
-            nDataPlot = nDataPlot[10:]
-            secgPlot = secgPlot[10:]
-            secg2Plot = secg2Plot[10:]
+        if counter < 500 :
+            plotted(nData, normalized, color='red', alpha=0.5)
+            plotted(nData, bandpassed, color='blue', alpha=0.5)
+        else :
+            plotted(nData[counter-500:], normalized[counter-500:], color='red', alpha=0.5)
+            plotted(nData[counter-500:], bandpassed[counter-500:], color='blue', alpha=0.5)
+            rpeaks, = segmen(signal=normalized, sampling_rate=samplingRate)
+            rpeaks, = cpeak(signal=normalized, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)        
 
-        plotted(nDataPlot, secgPlot, color='red', alpha=0.5)
-
-        # plt.figure(2)
-        plotted(nDataPlot, secg2Plot, color='blue', alpha=0.5)
-        
         print counter
 
         draw()
         plt.pause(0.0001)
             
-    #peak = wfdb.processing.gqrs_detect(x=secg2, fs=samplingRate, adcgain = secg2.adcgain[0], adczero = secg2.adczero[0], threshold=1.0)
-    #print peak
-    numpy.savetxt("ecgRaw.csv", numpy.transpose([nData,secg]), fmt='%.3e',delimiter=",",header="ECG")
-    numpy.savetxt("ecgBandpass.csv", numpy.transpose([nData,secg2]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("ecgRaw.csv", trans([nData,secg2]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("ecgProcessed.csv", trans([nData,normalized]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("ecgAmplitude.csv", trans([amplitud]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("ecgPhase.csv", trans([phas]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("peaks.csv", trans([rpeaks]), fmt='%.3e',delimiter=",",header="peaks")
     plt.savefig('ecg.png')
 
 # def populateForSave(dataT, filtered_data, counter):
@@ -478,8 +505,8 @@ if __name__ == '__main__':
     samplingRate = 100
     nSamples = 10
     digitalOutput = [0,0,1,1]
-    lowcut = 5.0
-    highcut = 45.0
+    lowcut = 0.5
+    highcut = 40.0
     order = 2
 
     # Connect to BITalino
