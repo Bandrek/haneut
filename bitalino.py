@@ -12,12 +12,12 @@ import numpy
 import re
 import serial
 import struct
-import proses
 import time
 import thread
 import biosppy
 import matplotlib.pyplot as plt
 from matplotlib import style
+from scipy.signal import butter, lfilter
 from Tkinter import *
 from collections import deque
 
@@ -355,6 +355,18 @@ class BITalino(object):
             data += reader(1)
         return data
             
+def butter_bandpass(lowcut, highcut, sampleRate, order = 2):
+    nyq = 0.5 * sampleRate
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype = 'band')
+    return b, a
+
+def butter_bandpass_filter(data, lowcut, highcut, sampleRate, order=2):
+    b, a = butter_bandpass(lowcut, highcut, sampleRate, order=order)
+    y = lfilter(b, a, data)
+    return y
+
 def convert(array):
     divisor = numpy.divide
     subtractor = numpy.subtract
@@ -412,7 +424,6 @@ def dataPlotting():
     appe = numpy.append
     plotted = plt.plot
     readed = device.read
-    bandpass = ps.butter_bandpass_filter
     convArr = numpy.asarray
     segmen = biosppy.ecg.hamilton_segmenter
     cpeak = biosppy.ecg.correct_rpeaks
@@ -432,7 +443,7 @@ def dataPlotting():
         #secg = appe(secg,dataT[6])
         secg2 = appe(secg2,dataTbaru)
         nData = appe(nData,[counter + 1,counter + 2,counter + 3,counter + 4,counter + 5,counter + 6,counter + 7,counter + 8,counter + 9,counter + 10])
-        bandpassed = bandpass(secg2,lowcut,highcut,samplingRate,order)
+        bandpassed = butter_bandpass_filter(secg2,lowcut,highcut,samplingRate,order)
         normalized = convArr(norm(signal=bandpassed,ddof=1))[0]
         hilbert = convArr(analitycSignal(signal=normalized, N=samplingRate*running_time))
         amplitud = hilbert[0]
@@ -450,24 +461,33 @@ def dataPlotting():
         # plt.figure(1)
         if counter < 500 :
             plotted(nData, normalized, color='red', alpha=0.5)
-            plotted(nData, bandpassed, color='blue', alpha=0.5)
+            #plotted(nData, bandpassed, color='blue', alpha=0.5)
         else :
-            plotted(nData[counter-500:], normalized[counter-500:], color='red', alpha=0.5)
-            plotted(nData[counter-500:], bandpassed[counter-500:], color='blue', alpha=0.5)
             rpeaks, = segmen(signal=normalized, sampling_rate=samplingRate)
-            rpeaks, = cpeak(signal=normalized, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)        
+            rpeaks, = cpeak(signal=normalized, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)
+            plotted(nData[counter-500:], normalized[counter-500:], color='red', alpha=0.5)
+            #plotted(nData[counter-500:], bandpassed[counter-500:], color='blue', alpha=0.5)
+        # if counter > 100 :            
+        #     rpeaks, = segmen(signal=normalized, sampling_rate=samplingRate)
+        #     rpeaks, = cpeak(signal=normalized, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)
 
         print counter
 
         draw()
         plt.pause(0.0001)
-            
-    savetext("ecgRaw.csv", trans([nData,secg2]), fmt='%.3e',delimiter=",",header="ECG")
-    savetext("ecgProcessed.csv", trans([nData,normalized]), fmt='%.3e',delimiter=",",header="ECG")
-    savetext("ecgAmplitude.csv", trans([amplitud]), fmt='%.3e',delimiter=",",header="ECG")
-    savetext("ecgPhase.csv", trans([phas]), fmt='%.3e',delimiter=",",header="ECG")
-    savetext("peaks.csv", trans([rpeaks]), fmt='%.3e',delimiter=",",header="peaks")
-    plt.savefig('ecg.png')
+    
+    rpeaks2 = list(rpeaks)
+
+    plt.plot(nData,normalized, color='blue', alpha=0.5, markevery=rpeaks2, marker="o")        
+    draw()
+    plt.pause(0.0001)
+
+    savetext("1_ecgRaw.csv", trans([nData,secg2]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("1_ecgProcessed.csv", trans([nData,normalized]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("1_ecgAmplitude.csv", trans([amplitud]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("1_ecgPhase.csv", trans([phas]), fmt='%.3e',delimiter=",",header="ECG")
+    savetext("1_peaks.csv", trans([rpeaks]), fmt='%.3e',delimiter=",",header="peaks")
+    # plt.savefig('ecg.png')
 
 # def populateForSave(dataT, filtered_data, counter):
 #     global secg
@@ -498,7 +518,7 @@ def disconnectButton():
 
 if __name__ == '__main__':
     macAddress = "98:D3:31:B2:BB:7D"
-    running_time = 30
+    running_time = 20
 
     batteryThreshold = 30
     acqChannels = [0,3]
@@ -511,9 +531,6 @@ if __name__ == '__main__':
 
     # Connect to BITalino
     device = BITalino(macAddress)
-
-    # Create object
-    ps = proses.ProcessECG()
 
     # Set battery threshold
     device.battery(batteryThreshold)
