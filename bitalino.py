@@ -450,15 +450,7 @@ def dataPlotting():
         phas = hilbert[1]
         counter = counter + 10
         end = timed()
-        
-        cla()
-        #if counter % 30
-        # try:
-        #    thread.start_new_thread( blyat, (nData, secg, bandpassed, ) )
-        # alizedexcept:
-        #    print "Error: unable to start thread"
-        # # 500
-        # plt.figure(1)
+    
         if counter < 500 :
             plotted(nData, normalized, color='red', alpha=0.5)
             #plotted(nData, bandpassed, color='blue', alpha=0.5)
@@ -472,7 +464,8 @@ def dataPlotting():
         #     rpeaks, = cpeak(signal=normalized, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)
 
         print counter
-
+        
+        cla()
         draw()
         plt.pause(0.0001)
     
