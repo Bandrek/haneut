@@ -1,0 +1,111 @@
+<html>
+    <body>
+        <div><h1>BITalinoWS</h1></div>
+	<div id="chartContainer" style="height: 370px; max-width: 920px; margin: 0px auto;"></div>
+	<div id="placeholder" style="width:600px;height:300px;"></div> 
+    </body>
+	<script>
+	</script>
+    <script language="javascript" type="text/javascript" src="jquery.js"></script> 
+    <script language="javascript" type="text/javascript" src="jquery.flot.js"></script> 
+	<script src="canvasjs.min.js"></script>
+    <script type="text/javascript">
+        // Establish a connection to the ServerBIT
+        var ws = new WebSocket("ws://localhost:9001 ");
+		var dataPoints = [];
+		var chart = new CanvasJS.Chart("chartContainer", {
+			theme: "light2",
+			title: {
+				text: "Live Data"
+			},
+			data: [{
+				type: "line",
+				dataPoints: dataPoints
+			}]
+		});
+		chart.render();
+
+        // Define the boolean data type as used in Python
+        var True = true
+        var False = false
+
+        ws.onopen = function() {
+        };
+		z=0;
+        // Process the responses sent by the ServerBIT
+        ws.onmessage = function (e) {
+            msg=e.data.toString()
+			msg = e.data.replace("device.read(","");
+			msg = msg.replace(");","");
+			if(msg.startsWith("[")){
+				var obj = jQuery.parseJSON(msg);
+				if(z > 5000){
+					dataPoints.splice(0,250);
+				}
+				for(i =0;i<obj.length;i++){
+					dataPoints.push({x: z+i, y: parseFloat(obj[i])});
+				}
+				z+=obj.length;
+				chart.render();
+			}
+			// Log the response onto the HTML body
+            //if (msg.indexOf("read")<0) {
+            //    $("body").html($("body").html()+msg+"<br/>")
+            //}
+
+            // Evaluate the respose
+            eval(e.data)
+        };
+
+     
+
+        // Process the server messages related with the server
+        server=new function() {
+            this.connected=function(msg) {
+                // When a connection to ServerBIT is established, open the connection to the device
+                ws.send("server.BITalino('98:D3:31:B2:BB:7D')")
+            }
+            this.BITalino=function(msg) {
+                if (msg) {
+                     // When a connection to the device is established start the acquisition
+                     ws.send("device.start(1000, [3])")
+                }
+            }
+        }
+
+        // Process the server messages related with the device
+        device=new function() {
+            this.start=function(msg) {
+                // When the device starts the acquisition read samples
+                ws.send("device.read(250)[:,-1]")
+            }
+            this.read=function(msg) {
+                // When a set of samples is read request more samples
+                ws.send("device.read(250)[:,-1]")
+                
+                var d1 = [];
+                for (var i = 0; i < msg.length; i += 1)
+                    d1.push([i, msg[i]]);
+                
+                $.plot($("#placeholder"), [ d1 ], {yaxis: {
+              min:0, max: 1024}});
+            }
+            this.version=function(msg) {}
+ 
+        }
+
+        // Process the server messages related with exceptions
+        sys=new function() {
+            this.exception=function(msg) {
+                alert(msg.toString());
+            }
+        }
+	window.onload = function() {
+
+
+	}
+        
+        
+    </script>
+
+</html>
