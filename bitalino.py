@@ -169,7 +169,7 @@ class BITalino(object):
         multiplier = numpy.multiply
         powerer = numpy.power
         
-        n=10
+        n=6
         vcc=3.3
         half=0.5
         g=1100
@@ -277,7 +277,7 @@ class BITalino(object):
         return y
 
     def dataProcessing(self, array):
-
+        print array.shape
         lowcut = 0.5
         highcut = 40.0
         order = 2
@@ -313,8 +313,12 @@ class BITalino(object):
         
         # Simpan raw data
         secg2 = appe(secg2,rawData)
-        counter = counter + 250
-            
+        counter = counter + 100
+        
+        # # normalisasi
+        # normalizing = convArr(norm(signal=rawData,ddof=1))[0]
+        # normalized = appe(normalized,normalizing)
+
         # Bandpass filter
         filtering = self.butter_bandpass_filter(rawData,lowcut,highcut,samplingRate,order)
         bandpassed = appe(bandpassed,filtering)
@@ -342,7 +346,7 @@ class BITalino(object):
         # savetext("2_ecgAmplitude.csv", trans([amplitud]), fmt='%.3e',delimiter=",",header="ECG")
         # savetext("2_ecgPhase.csv", trans([phas]), fmt='%.3e',delimiter=",",header="ECG")
         # savetext("2_peaks.csv", trans([rpeaks]), fmt='%.3e',delimiter=",",header="peaks")
-        data[5] = numpy.array(filtering)
+        data[5] = numpy.array(normalizing)
         processedData = data.T
         return processedData
 
@@ -422,9 +426,9 @@ class BITalino(object):
                 else:
                     raise Exception(ExceptionCode.CONTACTING_DEVICE)
             data = self.convert(dataAcquired)
-            print data.shape
             processedData = self.dataProcessing(data)
-            return processedData
+            print processedData.shape
+            return data
         else:
             raise Exception(ExceptionCode.DEVICE_NOT_IN_ACQUISITION)
 

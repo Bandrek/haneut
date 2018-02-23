@@ -1,29 +1,64 @@
+<!DOCTYPE html>
 <html>
-    <body>
-        <div><h1>BITalinoWS</h1></div>
-	<div id="chartContainer" style="height: 370px; max-width: 920px; margin: 0px auto;"></div>
-	<div id="placeholder" style="width:600px;height:300px;"></div> 
-    </body>
-	<script>
-	</script>
+<title>BitalinoWS ECG Monitoring System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="sidebar.css">
+<style>
+body, h1,h2,h3,h4,h5,h6 {font-family: "Verdana", sans-serif}
+</style>
+<body class="w3-white">
+
+
+<nav class="w3-sidebar w3-bar-block w3-small w3-hide-small w3-center">
+  <a href="javascript:void(0)" onclick="startMonitoring()" class="w3-bar-item w3-button w3-padding-large w3-hover-white" style="color:white">
+    <p>START</p>
+  </a>
+  <a href="javascript:void(0)" onclick="stopMonitoring()" class="w3-bar-item w3-button w3-padding-large w3-hover-white" style="color:white">
+    <p>STOP</p>
+  </a>
+</nav>
+
+<!-- Page Content -->
+<div class="w3-padding-large" id="main">
+    <div style="padding-top:100px"></div>
+  <!-- Header/Home -->
+  <div id="chartContainer"></div>
+  
+  <!-- End footer -->
+  </footer>
+
+<!-- END PAGE CONTENT -->
+</div>
+
+<!--Scripts-->
     <script language="javascript" type="text/javascript" src="jquery.js"></script> 
     <script language="javascript" type="text/javascript" src="jquery.flot.js"></script> 
 	<script src="canvasjs.min.js"></script>
     <script type="text/javascript">
         // Establish a connection to the ServerBIT
-        var ws = new WebSocket("ws://localhost:9001 ");
-		var dataPoints = [];
-		var chart = new CanvasJS.Chart("chartContainer", {
-			theme: "light2",
-			title: {
-				text: "Live Data"
-			},
-			data: [{
-				type: "line",
-				dataPoints: dataPoints
-			}]
-		});
-		chart.render();
+        function startMonitoring() {
+            var ws = new WebSocket("ws://localhost:9001 ");
+            
+            // Render the Chart
+        
+            var dataPoints = [];
+            var chart = new CanvasJS.Chart("chartContainer", {
+                theme: "light2",
+                animationEnabled: true,
+                zoomEnabled: true,
+                title:{
+                    text: "Live Data" 
+                },
+                data: [{
+                    type: "line",
+                    dataPoints: dataPoints
+                }]
+            });
+            chart.render();    
+            
+                       
 
         // Define the boolean data type as used in Python
         var True = true
@@ -100,12 +135,15 @@
                 alert(msg.toString());
             }
         }
-	window.onload = function() {
+            window.onload = function() {
 
-
-	}
+            }
+        }
         
-        
+        function stopMonitoring(){
+        }
+       
     </script>
-
+    
+</body>
 </html>
