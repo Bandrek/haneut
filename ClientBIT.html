@@ -75,7 +75,7 @@ body, h1,h2,h3,h4,h5,h6 {font-family: "Verdana", sans-serif}
 			if(msg.startsWith("[")){
 				var obj = jQuery.parseJSON(msg);
 				if(z > 5000){
-					dataPoints.splice(0,250);
+					dataPoints.splice(0,100);
 				}
 				for(i =0;i<obj.length;i++){
 					dataPoints.push({x: z+i, y: parseFloat(obj[i])});
@@ -103,7 +103,7 @@ body, h1,h2,h3,h4,h5,h6 {font-family: "Verdana", sans-serif}
             this.BITalino=function(msg) {
                 if (msg) {
                      // When a connection to the device is established start the acquisition
-                     ws.send("device.start(1000, [3])")
+                     ws.send("device.start(1000, [2])")
                 }
             }
         }
@@ -112,11 +112,11 @@ body, h1,h2,h3,h4,h5,h6 {font-family: "Verdana", sans-serif}
         device=new function() {
             this.start=function(msg) {
                 // When the device starts the acquisition read samples
-                ws.send("device.read(250)[:,-1]")
+                ws.send("device.read(100)[:,-1]")
             }
             this.read=function(msg) {
                 // When a set of samples is read request more samples
-                ws.send("device.read(250)[:,-1]")
+                ws.send("device.read(100)[:,-1]")
                 
                 var d1 = [];
                 for (var i = 0; i < msg.length; i += 1)

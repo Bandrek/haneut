@@ -169,7 +169,7 @@ class BITalino(object):
         multiplier = numpy.multiply
         powerer = numpy.power
         
-        n=6
+        n=10
         vcc=3.3
         half=0.5
         g=1100
@@ -259,8 +259,7 @@ class BITalino(object):
             for i,j in enumerate(digitalArray):
                 data = data | j<<(2+i)
 
-            dataBaru = self.dataProcessing(data)
-            self.send(dataBaru)
+            self.send(data)
         else:
             raise Exception(ExceptionCode.DEVICE_NOT_IN_ACQUISITION)
     
@@ -427,8 +426,8 @@ class BITalino(object):
                     raise Exception(ExceptionCode.CONTACTING_DEVICE)
             data = self.convert(dataAcquired)
             processedData = self.dataProcessing(data)
-            print processedData.shape
-            return data
+            print dataAcquired
+            return dataAcquired
         else:
             raise Exception(ExceptionCode.DEVICE_NOT_IN_ACQUISITION)
 
@@ -470,7 +469,7 @@ if __name__ == '__main__':
     macAddress = '98:D3:31:B2:BB:7D' #"98:D3:31:B1:84:2C"
     
     batteryThreshold = 30
-    acqChannels = [0,3]
+    acqChannels = [2]
     samplingRate = 100
     nSamples = 10
     digitalOutput = [0,0,1,1]
