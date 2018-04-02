@@ -280,7 +280,7 @@ class BITalino(object):
         lowcut = 0.5
         highcut = 40.0
         order = 2
-        samplingRate = 100
+        samplingRate = 1000
 
         # Create array
         nData = numpy.array([])
@@ -307,12 +307,11 @@ class BITalino(object):
 
         # Read samples
         data = array.T
-        raw = appe(raw,data[5])
         rawData = data[5]
-        
-        # Simpan raw data
-        secg2 = appe(secg2,rawData)
+        # timestamp = time.time()
+
         counter = counter + 100
+        result = []
         
         # # normalisasi
         # normalizing = convArr(norm(signal=rawData,ddof=1))[0]
@@ -323,8 +322,8 @@ class BITalino(object):
         bandpassed = appe(bandpassed,filtering)
 
         # normalisasi
-        normalizing = convArr(norm(signal=filtering,ddof=1))[0]
-        normalized = appe(normalized,normalizing)
+        # normalizing = convArr(norm(signal=filtering,ddof=1))[0]
+        # normalized = appe(normalized,normalizing)
 
         # hilberting = convArr(analitycSignal(signal=normalizing, N=samplingRate*running_time))
         # hilbert = appe(hilbert,hilberting)
@@ -335,9 +334,13 @@ class BITalino(object):
         # phasing = hilberting[1]
         # phas = appe(phas,phasing)
 
-        # rpeaks, = segmen(signal=normalized, sampling_rate=samplingRate)
-        # rpeaks, = cpeak(signal=normalized, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)
+        rpeaks, = segmen(signal=filtering, sampling_rate=samplingRate)
+        rpeaks, = cpeak(signal=filtering, rpeaks=rpeaks, sampling_rate=samplingRate,tol=0.05)
         
+        rri = numpy.diff(rpeaks)
+        rri = rri.astype(float)
+        rris = numpy.divide(rri, samplingRate)
+
         # rpeaks2 = list(rpeaks)
 
         # savetext("2_ecgRaw.csv", trans([nData,secg2]), fmt='%.3e',delimiter=",",header="ECG")
@@ -345,9 +348,10 @@ class BITalino(object):
         # savetext("2_ecgAmplitude.csv", trans([amplitud]), fmt='%.3e',delimiter=",",header="ECG")
         # savetext("2_ecgPhase.csv", trans([phas]), fmt='%.3e',delimiter=",",header="ECG")
         # savetext("2_peaks.csv", trans([rpeaks]), fmt='%.3e',delimiter=",",header="peaks")
-        data[5] = numpy.array(normalizing)
-        processedData = data.T
-        return processedData
+        result.append(filtering.tolist())
+        result.append(rris.tolist())
+
+        return result[0]
 
     def read(self, nSamples=100):
         """
@@ -426,8 +430,9 @@ class BITalino(object):
                     raise Exception(ExceptionCode.CONTACTING_DEVICE)
             data = self.convert(dataAcquired)
             processedData = self.dataProcessing(data)
-            print dataAcquired
-            return dataAcquired
+            print processedData
+            return processedData
+            # return 0
         else:
             raise Exception(ExceptionCode.DEVICE_NOT_IN_ACQUISITION)
 
@@ -470,8 +475,8 @@ if __name__ == '__main__':
     
     batteryThreshold = 30
     acqChannels = [2]
-    samplingRate = 100
-    nSamples = 10
+    samplingRate = 1000
+    nSamples = 100
     digitalOutput = [0,0,1,1]
     
     # Connect to BITalino

@@ -67,9 +67,9 @@ body, h1,h2,h3,h4,h5,h6 {font-family: "Verdana", sans-serif}
         ws.onopen = function() {
         };
 		z=0;
-        // Process the responses sent by the ServerBIT
+        // Process the responses sent by the Server
         ws.onmessage = function (e) {
-            msg=e.data.toString()
+            msg = e.data.toString()
 			msg = e.data.replace("device.read(","");
 			msg = msg.replace(");","");
 			if(msg.startsWith("[")){

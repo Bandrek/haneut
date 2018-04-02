@@ -77,6 +77,13 @@ class VS(protocol.Protocol):
 			
 			# Evaluate the request and retrieve the result
 			res = eval(req)
+			# print "hilih"+req
+			# print res
+			
+			# # Filter input if list then process parsing
+			# if type(res) is list:
+			# 	res = res[0]
+			# 	rri = res[1]
 			
 			# If the request is to shutdown the server no further action is needed		
 			
@@ -96,6 +103,7 @@ class VS(protocol.Protocol):
 			
 		# Send the response to the client
 		self.transport.write(res)
+		# self.transport.write(rri)
         
 
 
